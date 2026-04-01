@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weekly Kettlebell Plan</title>
+  <style>
+    :root {
+      --bg: #0f1220;
+      --panel: #171a2b;
+      --panel-2: #1f2440;
+      --text: #eef1ff;
+      --muted: #a9b0d0;
+      --accent: #7c5cff;
+      --accent-2: #28c7b7;
+      --danger: #ff6b6b;
+      --ring: rgba(124, 92, 255, 0.45);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #1f2550 0%, var(--bg) 45%);
+      color: var(--text);
+      font: 16px/1.4 Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+    }
+
+    .app {
+      width: min(900px, 100%);
+      background: linear-gradient(180deg, var(--panel) 0%, #121527 100%);
+      border: 1px solid #2e355f;
+      border-radius: 16px;
+      box-shadow: 0 20px 50px rgba(0,0,0,.4);
+      padding: 18px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(1.2rem, 2.4vw, 1.7rem);
+      letter-spacing: .2px;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .tab {
+      border: 1px solid #394273;
+      background: #1a1f37;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 0;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .tab[aria-selected="true"] {
+      background: linear-gradient(180deg, #7c5cff, #5f45d1);
+      border-color: transparent;
+      box-shadow: 0 0 0 3px var(--ring);
+    }
+
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .btn {
+      border: 1px solid #3c467d;
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .btn:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    .card {
+      background: #131831;
+      border: 1px solid #2c3667;
+      border-radius: 12px;
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .pill {
+      background: #1d2343;
+      border: 1px solid #2d3663;
+      border-radius: 10px;
+      padding: 8px;
+      text-align: center;
+    }
+
+    .pill .label { color: var(--muted); font-size: .8rem; }
+    .pill .value { font-weight: 700; margin-top: 2px; }
+
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    li {
+      background: #1b2244;
+      border: 1px solid #303b73;
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    .intensity-wrap {
+      display: grid;
+      gap: 6px;
+    }
+
+    .bar {
+      height: 12px;
+      background: #252d57;
+      border-radius: 999px;
+      border: 1px solid #364077;
+      overflow: hidden;
+    }
+
+    .fill {
+      height: 100%;
+      width: 0;
+      transition: width .25s ease;
+      background: linear-gradient(90deg, var(--accent-2), #50e3c2, #ffe66d, var(--danger));
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: .85rem;
+    }
+
+    @media (max-width: 680px) {
+      .tabs { grid-template-columns: repeat(4, 1fr); }
+      .meta { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" aria-live="polite">
+    <h1>Weekly Kettlebell Program</h1>
+
+    <div id="tabs" class="tabs" role="tablist" aria-label="Workout days"></div>
+
+    <div class="controls">
+      <button class="btn" id="prevBtn" type="button">PREV</button>
+      <button class="btn" id="nextBtn" type="button">NEXT</button>
+    </div>
+
+    <section class="card">
+      <h2 id="dayTitle" style="margin:0;"></h2>
+
+      <div class="meta">
+        <div class="pill"><div class="label">Kettlebell</div><div class="value" id="weight"></div></div>
+        <div class="pill"><div class="label">Calories</div><div class="value" id="calories"></div></div>
+        <div class="pill"><div class="label">Duration</div><div class="value" id="duration"></div></div>
+      </div>
+
+      <div>
+        <div class="hint" style="margin-bottom:6px;">Exercises</div>
+        <ul id="exerciseList"></ul>
+      </div>
+
+      <div class="intensity-wrap">
+        <div class="hint">Intensity</div>
+        <div class="bar"><div id="intensityFill" class="fill"></div></div>
+        <div id="intensityLabel" class="hint"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const workouts = [
+      { day: "01", title: "Day 01 · Full Body Primer", exercises: ["Kettlebell Deadlift · 4x10", "Goblet Squat · 4x8", "Farmer Carry · 4x40s"], kettlebell: "12 kg", calories: 310, duration: "32 min", intensity: 45 },
+      { day: "02", title: "Day 02 · Push + Core", exercises: ["Kettlebell Floor Press · 4x10", "Half-Kneeling Press · 3x8/side", "Plank Drag · 3x12"], kettlebell: "10 kg", calories: 355, duration: "35 min", intensity: 58 },
+      { day: "03", title: "Day 03 · Hinge & Posterior", exercises: ["Two-Hand Swing · 6x20", "Romanian Deadlift · 4x10", "Reverse Lunge · 3x10/side"], kettlebell: "14 kg", calories: 420, duration: "38 min", intensity: 70 },
+      { day: "04", title: "Day 04 · Recovery / Mobility", exercises: ["Halo · 3x12", "Windmill · 3x6/side", "Breathing Carry · 4x60s"], kettlebell: "8 kg", calories: 220, duration: "25 min", intensity: 32 },
+      { day: "05", title: "Day 05 · Conditioning", exercises: ["Swing Ladder · 10-15-20", "Thruster · 4x8", "Burpee + High Pull · 4x8"], kettlebell: "12 kg", calories: 490, duration: "40 min", intensity: 82 },
+      { day: "06", title: "Day 06 · Strength Focus", exercises: ["Front Squat · 5x6", "Single-Arm Row · 5x8/side", "Suitcase Carry · 5x30s/side"], kettlebell: "16 kg", calories: 460, duration: "42 min", intensity: 76 },
+      { day: "07", title: "Day 07 · Active Recovery", exercises: ["Light Swing · 4x15", "Turkish Get-Up (practice) · 3x3/side", "Long Stretch Flow · 12 min"], kettlebell: "8 kg", calories: 260, duration: "28 min", intensity: 38 }
+    ];
+
+    const tabs = document.getElementById('tabs');
+    const dayTitle = document.getElementById('dayTitle');
+    const weight = document.getElementById('weight');
+    const calories = document.getElementById('calories');
+    const duration = document.getElementById('duration');
+    const list = document.getElementById('exerciseList');
+    const fill = document.getElementById('intensityFill');
+    const intensityLabel = document.getElementById('intensityLabel');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    let activeIndex = 0;
+
+    function buildTabs() {
+      workouts.forEach((w, i) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.role = 'tab';
+        btn.className = 'tab';
+        btn.textContent = w.day;
+        btn.setAttribute('aria-controls', 'dayTitle');
+        btn.addEventListener('click', () => setDay(i));
+        tabs.appendChild(btn);
+      });
+    }
+
+    function setDay(i) {
+      activeIndex = i;
+      const w = workouts[i];
+
+      dayTitle.textContent = w.title;
+      weight.textContent = w.kettlebell;
+      calories.textContent = `${w.calories} kcal`;
+      duration.textContent = w.duration;
+      list.innerHTML = '';
+      w.exercises.forEach(ex => {
+        const li = document.createElement('li');
+        li.textContent = ex;
+        list.appendChild(li);
+      });
+
+      fill.style.width = `${w.intensity}%`;
+      intensityLabel.textContent = `${w.intensity}/100`;
+
+      [...tabs.children].forEach((tab, idx) => {
+        tab.setAttribute('aria-selected', idx === i ? 'true' : 'false');
+      });
+
+      prevBtn.disabled = i === 0;
+      nextBtn.disabled = i === workouts.length - 1;
+    }
+
+    prevBtn.addEventListener('click', () => {
+      if (activeIndex > 0) setDay(activeIndex - 1);
+    });
+
+    nextBtn.addEventListener('click', () => {
+      if (activeIndex < workouts.length - 1) setDay(activeIndex + 1);
+    });
+
+    buildTabs();
+    setDay(0);
+  </script>
+</body>
+</html>
